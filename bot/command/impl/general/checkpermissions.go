@@ -1,9 +1,6 @@
 package general
 
 import (
-	"fmt"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/TicketsBot-cloud/common/permission"
@@ -37,22 +34,12 @@ func (c CheckPermissionsCommand) GetExecutor() interface{} {
 }
 
 type PermissionCheck struct {
-	Permission permissiongdl.Permission
-	Description  i18n.MessageId
+	Permission  permissiongdl.Permission
+	Description i18n.MessageId
 }
 
-func (CheckPermissionsCommand) Execute(ctx registry.CommandContext) {
-	worker := ctx.Worker()
-	guildId := ctx.GuildId()
-	botId := worker.BotId
-
-	// Check for Administrator permission
-	if permissionwrapper.HasPermissions(worker, guildId, botId, permissiongdl.Administrator) {
-		ctx.ReplyRaw(customisation.Green, fmt.Sprintf("%s", i18n.PermissionsTitle), fmt.Sprintf("✅ <@%d> %s", botId, i18n.PermissionsHasAdministrator))
-		return
-	}
-
-	permissionsToCheck := []PermissionCheck{
+func getPermissionsToCheck() []PermissionCheck {
+	return []PermissionCheck{
 		{permissiongdl.ViewChannel, i18n.PermissionsViewChannel},
 		{permissiongdl.ManageChannels, i18n.PermissionsManageChannels},
 		{permissiongdl.ManageRoles, i18n.PermissionsManageRoles},
@@ -70,25 +57,41 @@ func (CheckPermissionsCommand) Execute(ctx registry.CommandContext) {
 		{permissiongdl.ReadMessageHistory, i18n.PermissionsReadMessageHistory},
 		{permissiongdl.UseApplicationCommands, i18n.PermissionsUseApplicationCommands},
 	}
+}
+
+func (CheckPermissionsCommand) Execute(ctx registry.CommandContext) {
+	worker := ctx.Worker()
+	guildId := ctx.GuildId()
+	botId := worker.BotId
+
+	// Check for Administrator permission
+	if permissionwrapper.HasPermissions(worker, guildId, botId, permissiongdl.Administrator) {
+		ctx.Reply(customisation.Green, i18n.PermissionsTitle, i18n.PermissionsHasAdministrator)
+		return
+	}
+
+	permissionsToCheck := getPermissionsToCheck()
 
 	// Check bot permissions
-	missingBotPermissions := []string{}
+	missingBotPermissions := []PermissionCheck{}
 	for _, check := range permissionsToCheck {
 		if !permissionwrapper.HasPermissions(worker, guildId, botId, check.Permission) {
-			missingBotPermissions = append(missingBotPermissions, string(check.Description))
+			missingBotPermissions = append(missingBotPermissions, check)
 		}
 	}
 
-	sort.Strings(missingBotPermissions)
-
 	// Build response
 	if len(missingBotPermissions) == 0 {
-		ctx.ReplyRaw(customisation.Green, fmt.Sprintf("%s", i18n.PermissionsTitle), fmt.Sprintf("✅ <@%d> %s", botId, i18n.PermissionsHasAllPermissions))
+		ctx.Reply(customisation.Green, i18n.PermissionsTitle, i18n.PermissionsHasAllPermissions, guildId)
 	} else {
 		embed := embed.NewEmbed().
-			SetTitle(fmt.Sprintf("❌ %s", i18n.PermissionsMissing)).
-			SetColor(int(customisation.Red)).
-			SetDescription(strings.Join(missingBotPermissions, "\n"))
+			SetTitle(ctx.GetMessage(i18n.PermissionsMissing)).
+			SetColor(ctx.GetColour(customisation.Red))
+
+		for _, missing := range missingBotPermissions {
+			embed.AddField(missing.Permission.String(), ctx.GetMessage(missing.Description), false)
+		}
+
 		ctx.ReplyWithEmbed(embed)
 	}
 }
