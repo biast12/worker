@@ -272,9 +272,9 @@ var (
 
 	PermissionsTitle                  MessageId = "commands.permissions.title"
 	PermissionsHasAdministrator       MessageId = "commands.permissions.has_admin"
-	PermissionsHasAllPermissions      MessageId = "commands.permissions.has_all_permissions"
+	PermissionsHasAll                 MessageId = "commands.permissions.has_all"
 	PermissionsMissing                MessageId = "commands.permissions.missing"
-	PermissionsViewChannel            MessageId = "commands.permissions.use.view_channel"
+	PermissionsReadMessages           MessageId = "commands.permissions.use.read_messages"
 	PermissionsManageChannels         MessageId = "commands.permissions.use.manage_channels"
 	PermissionsManageRoles            MessageId = "commands.permissions.use.manage_roles"
 	PermissionsManageWebhooks         MessageId = "commands.permissions.use.manage_webhooks"
